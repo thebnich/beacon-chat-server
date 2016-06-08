@@ -7,7 +7,7 @@ app.get('/', function (req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
-var messages = [];
+var messages = {};
 
 io.on('connection', function (socket) {
   console.log('a user connected');
@@ -16,16 +16,30 @@ io.on('connection', function (socket) {
     console.log('user disconnected');
   });
 
-  for (var message of messages) {
-    socket.emit('chat message', message);
-  }
+  socket.on('joinroom', function (room) {
+    socket.join(room);
+    socket.room = room;
+    console.log('user joined room: ' + room);
 
-  socket.on('chat message', function (msg) {
+    if (!messages[room]) {
+      messages[room] = [];
+    }
+
+    for (var message of messages[room]) {
+      socket.emit('msg', message);
+    }
+  });
+
+  socket.on('msg', function (msg) {
+    let room = socket.room;
+    if (!room) return;
+
     let time = dateFormat(Date.now(), "h:MM:ss TT");
     let message = [time, "guest", msg];
-    messages.push(message);
-    io.emit('chat message', message);
+    messages[room].push(message);
     if (messages.length > 100) messages.slice();
+    io.to(room).emit('msg', message);
+    console.log(time + ' ' + room + ' <guest> ' + msg);
   });
 });
 

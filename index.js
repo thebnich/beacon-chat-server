@@ -9,6 +9,8 @@ app.use(express.static('public'));
 var messages = {};
 
 io.on('connection', function (socket) {
+  socket.nick = "guest";
+
   console.log('a user connected');
 
   socket.on('disconnect', function () {
@@ -18,7 +20,7 @@ io.on('connection', function (socket) {
   socket.on('joinroom', function (room) {
     socket.join(room);
     socket.room = room;
-    console.log('user joined room: ' + room);
+    console.log(socket.nick + ' joined room: ' + room);
 
     if (!messages[room]) {
       messages[room] = [];
@@ -29,16 +31,29 @@ io.on('connection', function (socket) {
     }
   });
 
+  socket.on('leaveroom', function (room) {
+    socket.leave(socket.room);
+    delete socket.room;
+  });
+
   socket.on('msg', function (msg) {
     let room = socket.room;
-    if (!room) return;
-
     let time = dateFormat(Date.now(), "h:MM:ss TT");
-    let message = [time, "guest", msg];
+    console.log(time + ' ' + room + ' <' + socket.nick + '> ' + msg);
+    if (!room) {
+      console.log('no room! ignoring');
+      return;
+    }
+
+    let message = [time, socket.nick, msg];
     messages[room].push(message);
     if (messages.length > 100) messages.slice();
     io.to(room).emit('msg', message);
-    console.log(time + ' ' + room + ' <guest> ' + msg);
+  });
+
+  socket.on('nick', function (nick) {
+    console.log('setting nick: ' + nick);
+    socket.nick = nick;
   });
 });
 

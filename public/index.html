@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Beacon chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0; user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="index.css">
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <form action="" autocomplete="off">
+      <input id="m" />
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script>
+      var socket = io();
+      $('form').submit(function() {
+        socket.emit('msg', $('#m').val());
+        $('#m').val('');
+        return false;
+      });
+
+      socket.on('connect', function () {
+        socket.emit('joinroom', window.location.hash.substr(1));
+        $('#messages').empty();
+      });
+
+      socket.on('msg', function (msg) {
+        var $message = $('<li>')
+          .append($('<span>', { text: msg[0], class: 'time' }))
+          .append($('<span>', { text: msg[1], class: 'user' }))
+          .append(msg[2]);
+
+        var $messages = $('#messages');
+        console.log("animate");
+        $messages
+          .append($message)
+          .stop()
+          .animate({ scrollTop: $messages.prop("scrollHeight") - $messages.height() }, 150);
+      });
+    </script>
+  </body>
+</html>
